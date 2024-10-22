@@ -49,7 +49,7 @@ class GameClient():
             # Wait till received my_id from server
             self.id_recv_event.wait()
             with self.lock_print:
-                print("Received id={my_id}")
+                print(f"Received id={my_id}")
 
             # Wait untill receiving first game_img
             self.game_img_recv_event.wait()
@@ -124,7 +124,7 @@ class GameClient():
 
         return True
 
-    def handle_data_client(self, raw_data, msg_type):
+    def handle_server_data(self, raw_data, msg_type):
         """ Handle raw data received from server """
         if msg_type == MSG_TYPE_SNAKEGAME:
             with self.lock_game_img:
@@ -167,7 +167,7 @@ class GameClient():
                 raw_data = self.recv_all(s, msg_len)
                 if not raw_data:
                     return # Connection interruped
-            self.handle_data_client(raw_data, msg_type)
+            self.handle_server_data(raw_data, msg_type)
 
     def send_input(self, s, direction, speed):
         """ Send input message to server """

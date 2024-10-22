@@ -26,9 +26,9 @@ class SnakeGame:
         return (random.randint(l, h), random.randint(l, h), random.randint(l, h))
     
     def vibrate_pos(self, pos, factor=1):
-        """ 'Vibrate' a dot """
+        """ Return a position that's slightly differnt from the original one """
         r1, r2 = random.random()-0.5, random.random()-0.5
-        return (pos[0]+r1*factor, pos[1]+r2*factor)
+        return (round(pos[0]+r1*factor), round(pos[1]+r2*factor))
     
     def vibrate_color(self, color, negative, positive):
         """ Adjust the color to make it slightly different """
@@ -47,22 +47,18 @@ class SnakeGame:
         vec2 = pg.math.Vector2(p2[0], p2[1])
         return vec1.distance_to(vec2)
     
-    # Delete a snake
     def kill_snake(self, snake_id):
+        """ Kill a snake and turn its body into food """
         if not snake_id in self.snakes:
             return
         
         # Using len(.positions) instead of .length to get actual body length on the map
         tot_val = len(self.snakes[snake_id].positions)
-        pos_used = []
         # Turning its body into food
         while tot_val > 0:
-            pos = random.choice(self.snakes[snake_id].positions)
-            if pos in pos_used:
+            pos = self.vibrate_pos(random.choice(self.snakes[snake_id].positions))
+            if pos in self.food:
                 continue
-            else:
-                pos_used.append(pos)
-            pos = self.vibrate_pos(pos, 20)
             color = self.vibrate_color(self.snakes[snake_id].color, -10, 40)
             radius = random.uniform(max(0, FOOD_BODY_RADIUS_AVE*3/4), FOOD_BODY_RADIUS_AVE*5/4)
             value = min(tot_val, random.uniform(max(0, FOOD_BODY_VALUE_AVE/2), FOOD_BODY_VALUE_AVE*3/2))
@@ -75,9 +71,14 @@ class SnakeGame:
 
         del self.snakes[snake_id]
 
-    # Detect collision between the head and other objects
-    # Return True when snake deleted, else return False
     def handle_collision(self, snake_id):
+        """
+        Handle collision between snake head and other objects.
+        Return True when snake killed, else return False.
+        """
+        if not snake_id in self.snakes:
+            return
+
         ra = self.snakes[snake_id].radius
         # Collision with the edge of the map
         head_pos = self.snakes[snake_id].head()
@@ -100,28 +101,30 @@ class SnakeGame:
             for y in range(head_pos[1]-f_range, head_pos[1]+f_range):
                 if (x, y) in self.food:
                     self.snakes[snake_id].length += self.food[(x, y)]["value"]
-                    is_food = True
                     del self.food[(x, y)]
+
         return False
 
-    # Move the snakes and adjust food on the map
     def update_game(self):
+        """ Move the snakes and adjust food on the map """
         self.update_food()
-        for snake in list(self.snakes.keys()):
-            if self.handle_collision(snake):
+        for snake_id in list(self.snakes):
+            if self.handle_collision(snake_id):
                 continue
-            else:
-                self.snakes[snake].move()
+            self.snakes[snake_id].move()
 
-    # Update parameters of a snake from user input but do not move the player
     def update_player(self, snake_id, direction=None, speed=None):
+        """ Update parameters of a snake from user input but do not move the player """
+        if not snake_id in self.snakes:
+            return True
         if not direction is None:
             self.snakes[snake_id].direction = direction 
         if not speed is None:
             self.snakes[snake_id].speed = speed
+        return False
 
-    # Adjust the amount of food on the map
     def update_food(self, amount=FOOD_MIN):
+        """ Adjust the amount of food on the map """
         # Not enough food
         while len(self.food) < amount:
             pos = (random.randint(0, MAP_WIDTH), random.randint(0, MAP_HEIGHT))
@@ -136,17 +139,21 @@ class SnakeGame:
                 "value": value
             }
         # Too much food (2x)
-        while len(self.food) > amount*2:
-            fpos = random.choice(self.food.keys())
-            del self.food[fpos]
+        #while len(self.food) > amount*2:
+            #fpos = random.choice(list(self.food.keys()))
+            #del self.food[fpos]
     
-    # Calculate camera zoom factor (zf) based on snake radius
-    def get_zf(self, snake_id, f=1.5):
+    def get_zf(self, snake_id, f=1.3):
+        """ Calculate camera zoom factor (zf) based on snake radius """
+        if not snake_id in self.snakes:
+            return None 
         return math.sqrt(self.snakes[snake_id].radius/SNAKE_RADIUS_MIN)/f
 
-    # Render the map using pygame, the head of the given snake placed at the center
-    # Camera zooms out when the snake gets bigger
     def render(self, screen, head_pos, zf):
+        """
+        Render the map, the head of the given snake placed at the center.
+        Camera zooms out when the snake gets bigger.
+        """
         # Calculate the position of the center of the camera on the map
         ccx = max(SCREEN_WIDTH*zf/2, min(MAP_WIDTH-(SCREEN_WIDTH*zf/2), head_pos[0]))
         ccy = max(SCREEN_HEIGHT*zf/2, min(MAP_HEIGHT-(SCREEN_HEIGHT*zf/2), head_pos[1]))

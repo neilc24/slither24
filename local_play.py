@@ -6,15 +6,15 @@ Github: https://github.com/neilc24/slither24
 import pygame as pg
 import math
 import sys
+
 from snake_game import SnakeGame
 from config import *
 
-# The only snake existing in the offline game
+# The only snake controlled by huamn existing in the offline game
 MY_SNAKE_ID = "mySnake01"
 
 # Initialize pygame
 pg.init()
-
 # Initialize music player
 pg.mixer.init()
 
@@ -32,12 +32,12 @@ sound_channel01.pause()
 pg.display.set_icon(pg.image.load('assets/icon.png'))
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pg.display.set_caption(WINDOW_CAPTION)
+
 clock = pg.time.Clock()
 
 mygame = SnakeGame()
 mygame.add_player(MY_SNAKE_ID)
-mygame.add_player("DEBUG", (10, 1000, GREEN)) # DEBUG PLAYER2
-print(f"color={mygame.snakes[MY_SNAKE_ID].color}")
+mygame.add_player("DEBUG", (2600, 3020), GREEN) # DEBUG PLAYER2
 
 running = True
 while running and (MY_SNAKE_ID in mygame.snakes):
