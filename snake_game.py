@@ -106,12 +106,15 @@ class SnakeGame:
         return False
 
     def update_game(self):
-        """ Move the snakes and adjust food on the map """
+        """ Move the snakes and adjust food on the map. Return the IDs of killed snakes"""
+        death_records = []
         self.update_food()
         for snake_id in list(self.snakes):
             if self.handle_collision(snake_id):
+                death_records.append(snake_id)
                 continue
             self.snakes[snake_id].move()
+        return death_records
 
     def update_player(self, snake_id, direction=None, speed=None):
         """ Update parameters of a snake from user input but do not move the player """

@@ -9,13 +9,14 @@ import socket
 import pickle
 import struct
 import threading
+import sys
 
 from snake_game import SnakeGame
 from config import *
 
 # HOST = "165.227.82.177"
 HOST = "127.0.0.1"
-PORT = 12346
+PORT = 12345
 
 class GameClient():
     def __init__(self,):
@@ -38,7 +39,8 @@ class GameClient():
             except:
                 with self.lock_print:
                     print("Cannot connect.")
-                    return
+                    self.close()
+                    return #
             with self.lock_print:
                 print("Connected to server.")
 
@@ -81,9 +83,13 @@ class GameClient():
             while self.game_loop(screen=screen, sound_channel=sound_channel01, server=server_socket) and is_alive:
                 self.clock.tick(FPS)
             
-            # Quit music mixer and pygame
-            pg.mixer.music.stop()    
-            pg.quit()
+            self.close()
+
+    def close(self):
+        """ End the whole program """
+        pg.mixer.music.stop()
+        pg.quit()
+        sys.exit()
 
     def game_loop(self, screen, sound_channel, server):
         """ Main game loop inside 'while Ture' """
@@ -138,12 +144,11 @@ class GameClient():
         elif msg_type == MSG_TYPE_NOTICE:
             with self.lock_print:
                 print("You died.") # DEBUG
-            # Mark self as dead
             global is_alive
             is_alive = False
+            self.close()
         else:
-            with self.lock_print:
-                print("Can't decode message from server.") # DEBUG
+            pass
     
     def recv_all(self, server, l):
         """ Receive length l of data """
@@ -160,13 +165,15 @@ class GameClient():
         while True:
             raw_header = self.recv_all(s, 8)
             if not raw_header:
-                return # Connection interrupted
+                self.close() # Connection interrupted
+                return #
             msg_type, msg_len = struct.unpack('!II', raw_header)
             raw_data = b""
             if not msg_type == MSG_TYPE_NOTICE:
                 raw_data = self.recv_all(s, msg_len)
                 if not raw_data:
-                    return # Connection interruped
+                    self.close() # Connection interruped
+                    return #
             self.handle_server_data(raw_data, msg_type)
 
     def send_input(self, s, direction, speed):
