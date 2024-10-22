@@ -1,11 +1,14 @@
-# snake_game.py
-# Neil 2024
+"""
+Including main class SnakeGame.
+Github: https://github.com/neilc24/slither24
+"""
 
 import pygame as pg
 import math
 import random
-from config import *
+
 from snake import Snake
+from config import *
      
 class SnakeGame:
     def __init__ (self):
@@ -17,29 +20,29 @@ class SnakeGame:
     def __str__ (self):
         return f"<SnakeGame snakes={len(self.snakes)}, food={len(self.food)}>"
     
-    # Return a random color
     def randcolor(self, low_brightness = 0, high_brightness = 255):
+        """ Return a random RGB color """
         l, h = max(low_brightness, 0), min(high_brightness, 255)
         return (random.randint(l, h), random.randint(l, h), random.randint(l, h))
     
-    # "Vibrate" a dot
     def vibrate_pos(self, pos, factor=1):
+        """ 'Vibrate' a dot """
         r1, r2 = random.random()-0.5, random.random()-0.5
         return (pos[0]+r1*factor, pos[1]+r2*factor)
     
-    # Adjust the color to make it slightly different
     def vibrate_color(self, color, negative, positive):
+        """ Adjust the color to make it slightly different """
         vibrate_rgb = lambda x: max(0, min(255, x+random.randint(negative, positive)))
         return tuple(map(vibrate_rgb, color))
 
-    # Add a new snake into the game
     def add_player(self, snake_id, position=MAP_CENTER, color=None):
+        """ Add a new snake into the game """
         if color is None:
             color = self.randcolor(100)
         self.snakes[snake_id] = Snake(position, color)
 
-    # Return distance between two points on the map
     def distance2p(self, p1, p2):
+        """ Return distance between two points on a 2d map """
         vec1 = pg.math.Vector2(p1[0], p1[1])
         vec2 = pg.math.Vector2(p2[0], p2[1])
         return vec1.distance_to(vec2)
@@ -138,8 +141,8 @@ class SnakeGame:
             del self.food[fpos]
     
     # Calculate camera zoom factor (zf) based on snake radius
-    def get_zf(self, snake_id):
-        return math.sqrt(self.snakes[snake_id].radius/SNAKE_RADIUS_MIN)
+    def get_zf(self, snake_id, f=1.5):
+        return math.sqrt(self.snakes[snake_id].radius/SNAKE_RADIUS_MIN)/f
 
     # Render the map using pygame, the head of the given snake placed at the center
     # Camera zooms out when the snake gets bigger

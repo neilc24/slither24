@@ -1,5 +1,7 @@
-# local_play.py
-# neil 2024
+"""
+Single player mode (offline) for debugging.
+Github: https://github.com/neilc24/slither24
+"""
 
 import pygame as pg
 import math
@@ -19,9 +21,11 @@ pg.mixer.init()
 # Load music
 pg.mixer.music.load('assets/music01.mp3')
 pg.mixer.music.play(-1)
+pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
 speedup_sound = pg.mixer.Sound('assets/sound_effect01.mp3')
 sound_channel01 = pg.mixer.Channel(0)
 sound_channel01.play(speedup_sound, loops=-1)
+sound_channel01.set_volume(MUSIC_VOLUME) # Set volume
 sound_channel01.pause()
 
 # Set up window display
@@ -32,6 +36,7 @@ clock = pg.time.Clock()
 
 mygame = SnakeGame()
 mygame.add_player(MY_SNAKE_ID)
+mygame.add_player("DEBUG", (10, 1000, GREEN)) # DEBUG PLAYER2
 print(f"color={mygame.snakes[MY_SNAKE_ID].color}")
 
 running = True
@@ -85,6 +90,7 @@ while running and (MY_SNAKE_ID in mygame.snakes):
     pg.display.flip()
 
     mygame.update_player(MY_SNAKE_ID, direction, speed)
+    mygame.update_player("DEBUG") # DEBUG
     mygame.update_game()
 
     clock.tick(FPS)

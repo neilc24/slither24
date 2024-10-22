@@ -1,7 +1,10 @@
-# snake.py
-# Neil 2024
+"""
+Including Snake class.
+Github: https://github.com/neilc24/slither24
+"""
 
 import math
+
 from config import *
 
 class Snake:
