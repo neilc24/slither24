@@ -1,5 +1,5 @@
 """
-Server of the game without graphics.
+server.py
 Github: https://github.com/neilc24/slither24
 """
 
@@ -24,11 +24,6 @@ class GameServer(SnakeNetwork):
         self.lock_print = threading.Lock()
         self.clock = pg.time.Clock()
 
-    def get_state(self):
-        """ Return a string of current state of the server """
-        with self.lock_mygame:
-            return f"mapsize={MAP_WIDTH}*{MAP_HEIGHT}, fps={FPS}, \ngame={self.mygame}"
-    
     def start(self):
         """ Start server """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
@@ -49,9 +44,9 @@ class GameServer(SnakeNetwork):
 
             # Loop: accepting new clients
             while True:
-                # Print current game state and other information
-                with self.lock_print:
-                    print(self.get_state())
+                # Print a snapshot of the current game
+                with self.lock_mygame, self.lock_print:
+                    print(self.mygame)
                 new_client = server.accept()
                 t_client = threading.Thread(target=self.handle_client, args=(new_client,))
                 t_client.start()
@@ -70,7 +65,7 @@ class GameServer(SnakeNetwork):
         with self.lock_print:
             print(f"New player added. ID={new_id}")
         # Send ID back to player
-        if not self.send_id(player, new_id):
+        if not self.send_id(player[0], new_id):
             self.remove_player(player)
             return None
         return new_id
@@ -78,10 +73,9 @@ class GameServer(SnakeNetwork):
     def remove_player(self, player, holding_lock_mygame=False, holding_lock_players=False):
         """ Remove a player from the game """
         dead_id = None
-
+        self.send_death_notice(player[0])
         # Close socket connection
         player[0].close()
-
          # Remove player from self.players
         if not holding_lock_players:
             self.lock_players.acquire()
@@ -90,7 +84,6 @@ class GameServer(SnakeNetwork):
             del self.players[player]
         if not holding_lock_players:
             self.lock_players.release()
-
         # Remove player from self.mygame
         if not holding_lock_mygame:
             self.lock_mygame.acquire()
@@ -98,10 +91,10 @@ class GameServer(SnakeNetwork):
             self.mygame.kill_snake(dead_id)
         if not holding_lock_mygame:
             self.lock_mygame.release()
-
+        # Print
         if not dead_id is None:
             with self.lock_print:
-                print(f"Player removed. ID={dead_id}")
+                print(f"Player {dead_id} removed.")
 
     def run_game(self):
         """ Run the game logic and broadcast the game state """
@@ -113,7 +106,6 @@ class GameServer(SnakeNetwork):
                     # If a player died remove them from {players}
                     for player in list(self.players):
                         if self.players[player] in death_records:
-                            self.send_death_notice(player)
                             self.remove_player(player, holding_lock_mygame=False, holding_lock_players=True)
             # Broadcast current game state to every player
             self.broadcast_game()
@@ -124,7 +116,7 @@ class GameServer(SnakeNetwork):
         # Using threadpool
         with ThreadPoolExecutor(max_workers=MAX_PLAYERS//2+1) as executor:
             with self.lock_mygame, self.lock_players:
-                futures = [executor.submit(self.send_game_snapshot, player, self.mygame) for player in self.players]
+                futures = [executor.submit(self.send_game_snapshot, player[0], self.mygame) for player in self.players]
                 for i in range(0, len(self.players)):
                     if not futures[i]:
                         self.remove_player(self.players[i], True, True)

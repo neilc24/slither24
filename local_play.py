@@ -37,7 +37,7 @@ clock = pg.time.Clock()
 
 mygame = SnakeGame()
 mygame.add_player(MY_SNAKE_ID)
-mygame.add_player("DEBUG", (2600, 3020), GREEN) # DEBUG PLAYER2
+mygame.add_player("DEBUG", (1810, 2100), GREEN) # DEBUG PLAYER2
 
 running = True
 while running and (MY_SNAKE_ID in mygame.snakes):
@@ -72,14 +72,12 @@ while running and (MY_SNAKE_ID in mygame.snakes):
                     pg.display.flip()
                     clock.tick(FPS)
                     
-    keys = pg.key.get_pressed()
-    mouse_pos = pg.mouse.get_pos()
-
-    speed = SPEED_NORMAL if not keys[pg.K_SPACE] else SPEED_FAST
+    keys, mouse_pos = pg.key.get_pressed(), pg.mouse.get_pos()
 
     dx = mouse_pos[0]-SCREEN_CENTER[0]
     dy = mouse_pos[1]-SCREEN_CENTER[1]
     direction = math.degrees(math.atan2(-dy, dx)) # In pygame up and down are reversed
+    speed = SPEED_NORMAL if not keys[pg.K_SPACE] else SPEED_FAST
 
     screen.fill(BLACK)
     font = pg.font.Font(None, 36)

@@ -76,19 +76,23 @@ class SnakeGame:
         Handle collision between snake head and other objects.
         Return True when snake killed, else return False.
         """
+        def is_in_box(box, pos, r):
+            """ Determin if a point is closer than r to a limit_box """
+            return (pos[0]>=box[0]-r and pos[0]<=box[1]+r and pos[1]>=box[2]-r and pos[1]<=box[3]+r)
+        
         if not snake_id in self.snakes:
-            return
+            return True
 
         ra = self.snakes[snake_id].radius
-        # Collision with the edge of the map
         head_pos = self.snakes[snake_id].head()
+        # Collision with the edge of the map
         if head_pos[0] <= ra or head_pos[1] <= ra or head_pos[0] >= MAP_WIDTH-ra or head_pos[1] >= MAP_HEIGHT-ra:
             self.kill_snake(snake_id)
             return True
 
         # Collision with other snakes
         for snake in self.snakes.values():
-            if snake == self.snakes[snake_id]:
+            if snake == self.snakes[snake_id] or not is_in_box(snake.limit_box, head_pos, ra+snake.radius):
                 continue
             for p in snake.positions:
                 if self.distance2p(head_pos, p) <= ra+snake.radius:
@@ -96,7 +100,7 @@ class SnakeGame:
                     return True
 
         # "Collision" with food
-        f_range = int(ra+SNAKE_RADIUS_MIN)
+        f_range = int(ra+FOOD_RADIUS_AVE)
         for x in range(head_pos[0]-f_range, head_pos[0]+f_range):
             for y in range(head_pos[1]-f_range, head_pos[1]+f_range):
                 if (x, y) in self.food:
@@ -119,12 +123,12 @@ class SnakeGame:
     def update_player(self, snake_id, direction=None, speed=None):
         """ Update parameters of a snake from user input but do not move the player """
         if not snake_id in self.snakes:
-            return True
+            return False
         if not direction is None:
             self.snakes[snake_id].direction = direction 
         if not speed is None:
             self.snakes[snake_id].speed = speed
-        return False
+        return True
 
     def update_food(self, amount=FOOD_MIN):
         """ Adjust the amount of food on the map """
