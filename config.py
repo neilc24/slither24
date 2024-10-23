@@ -24,7 +24,7 @@ SNAKE_RADIUS_MIN = 9
 ANGLE_MAX = 6 # Maximum turning angle
 SPEED_NORMAL = 2.4
 SPEED_FAST = 5.6
-SPEEDUP_COST = 0.16 # Cost of length per frame when speeding up
+SPEEDUP_COST = 0.18 # Cost of length per frame when speeding up
 
 FOOD_PER_1000x1000 = 150
 FOOD_MIN = round(FOOD_PER_1000x1000*MAP_WIDTH*MAP_HEIGHT/(1000*1000)) # Least amount of food in total

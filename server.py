@@ -5,22 +5,20 @@ Github: https://github.com/neilc24/slither24
 
 import pygame as pg
 import socket
-import pickle
 import struct
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from snake_game import SnakeGame
+from snake_network import *
 from config import *
 
-HOST = ""
-PORT = 12345
-
-class GameServer():
+class GameServer(SnakeNetwork):
     def __init__(self):
-        self.host = HOST
-        self.port = PORT
+        self.server_addr = (HOST, PORT)
         self.mygame = SnakeGame()
         self.players = {}
+        # Deadlock prevention: lock_mygame > lock_players > lock_print
         self.lock_mygame = threading.Lock()
         self.lock_players = threading.Lock()
         self.lock_print = threading.Lock()
@@ -35,7 +33,7 @@ class GameServer():
         """ Start server """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
             try:
-                server.bind((self.host, self.port))
+                server.bind(self.server_addr)
             except Exception as e:
                 with self.lock_print:
                     print(f"Error: Cannot start server ({e})")
@@ -43,7 +41,7 @@ class GameServer():
 
             server.listen()
             with self.lock_print:
-                print(f"Server listening on {self.host}:{self.port}...")
+                print(f"Server listening on {self.server_addr}...")
 
             # Start a new thread to run game logic and broadcast
             t_game = threading.Thread(target=self.run_game)
@@ -72,7 +70,9 @@ class GameServer():
         with self.lock_print:
             print(f"New player added. ID={new_id}")
         # Send ID back to player
-        self.send_id(player)
+        if not self.send_id(player, new_id):
+            self.remove_player(player)
+            return None
         return new_id
 
     def remove_player(self, player, holding_lock_mygame=False, holding_lock_players=False):
@@ -95,7 +95,7 @@ class GameServer():
         if not holding_lock_mygame:
             self.lock_mygame.acquire()
         if dead_id in self.mygame.snakes:
-            del self.mygame.snakes[dead_id]
+            self.mygame.kill_snake(dead_id)
         if not holding_lock_mygame:
             self.lock_mygame.release()
 
@@ -121,49 +121,13 @@ class GameServer():
 
     def broadcast_game(self):
         """ Broadcast the game state to every player """
-        # To improve: use threadpool
-        with self.lock_mygame:
-            data = pickle.dumps(self.mygame)
-            # Combine header and data together
-            msg_to_send = struct.pack('!II', MSG_TYPE_SNAKEGAME, len(data))+data
-        with self.lock_players:
-            for player in list(self.players):
-                try:
-                    player[0].sendall(msg_to_send)
-                except:
-                    with self.lock_print:
-                        print(f"Connection with {player[1]} interrupted during broadcasting.")
-                    self.remove_player(player, holding_lock_mygame=False, holding_lock_players=True) # Remove player
-
-
-    def generate_id(self, ip="unknown"):
-        """ Generate an ID for a new player """
-        with self.lock_mygame:
-            for i in range(1, MAX_PLAYERS):
-                if not f"{ip}_{i}" in self.mygame.snakes:
-                    return f"{ip}_{i}"
-        return None
-
-    def send_id(self, player):
-        """ Send player their ID """
-        data_to_send = self.players[player].encode()
-        try:
-            player[0].sendall(struct.pack('!II', MSG_TYPE_SNAKEID, len(data_to_send))) # Header
-            player[0].sendall(data_to_send)
-        except:
-            self.remove_player(player, holding_lock_mygame=False, holding_lock_players=False)
-            return False
-        return True
-
-    def send_death_notice(self, player):
-        """ Send a message to notice player that they died """
-        try:
-            player[0].sendall(struct.pack('!II', MSG_TYPE_NOTICE, 0)) # Header
-            # No following data after header
-        except:
-            with self.lock_print:
-                print(f"Connection with {player[1]} interrupted.")
-            self.remove_player(player, holding_lock_mygame=False, holding_lock_players=False)
+        # Using threadpool
+        with ThreadPoolExecutor(max_workers=MAX_PLAYERS//2+1) as executor:
+            with self.lock_mygame, self.lock_players:
+                futures = [executor.submit(self.send_game_snapshot, player, self.mygame) for player in self.players]
+                for i in range(0, len(self.players)):
+                    if not futures[i]:
+                        self.remove_player(self.players[i], True, True)
 
     def handle_client_data(self, snake_id, raw_data, msg_type):
         """ Handle raw data received from a client """
@@ -177,41 +141,29 @@ class GameServer():
             # Unknown message type
             pass
 
-    def recv_all(self, conn, l):
-        """ Receive all data of length l"""
-        data = b''
-        while len(data) < l:
-            try:
-                packet = conn.recv(l - len(data))
-            except:
-                return None # Connection interrupted
-            if not packet:
-                return None # Connection interrupted
-            data += packet
-        return data
-
     def handle_client(self, player):
         """ Register client and receive messages"""
-        with player[0]:
+        with player[0] as conn:
             # Register player
             client_id = self.register_player(player)
             # Message receiving loop
             while True:
-                try:
-                    raw_header = self.recv_all(player[0], 8)
-                    if raw_header is None:
-                        break
-                    msg_type, msg_len = struct.unpack('!II', raw_header)
-                    raw_data = self.recv_all(player[0], msg_len)
-                    if raw_data is None:
-                        break
-                except Exception as e:
-                    print(f"Error: Connection with {player[1]} interrupted. Reason: {e}")
+                msg = self.recv_msg(conn)
+                if msg is None:
                     break
+                raw_data, msg_type = msg
                 self.handle_client_data(client_id, raw_data, msg_type)
             # Remove player in the end
             self.remove_player(player, holding_lock_mygame=False, holding_lock_players=False)
 
+    def generate_id(self, ip="unknown"):
+        """ Generate an ID for a new player """
+        with self.lock_mygame:
+            for i in range(1, MAX_PLAYERS):
+                if not f"{ip}_{i}" in self.mygame.snakes:
+                    return f"{ip}_{i}"
+        return None
+    
 if __name__ == "__main__":
     my_server = GameServer()
     my_server.start()

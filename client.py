@@ -7,22 +7,18 @@ import pygame as pg
 import math
 import socket
 import pickle
-import struct
 import threading
 import sys
 
 from snake_game import SnakeGame
+from snake_network import *
 from config import *
 
-DEFAULT_HOST = "127.0.0.1"
-DEFAULT_PORT = 12345
-
-class GameClient():
-    def __init__(self, host, port):
+class GameClient(SnakeNetwork):
+    def __init__(self, host=HOST, port=PORT):
         self.server_addr = (host, port)
         self.game_img = SnakeGame() # A local image of the game that runs on the server
         self.my_id = ""
-        self.is_alive = False
         self.lock_game_img = threading.Lock()
         self.lock_print = threading.Lock()
         self.id_recv_event = threading.Event()
@@ -35,15 +31,15 @@ class GameClient():
             # Connect to server
             try:
                 server_socket.connect(self.server_addr)
-            except:
+            except Exception as e:
                 with self.lock_print:
-                    print(f"Cannot connect to {self.server_addr}")
+                    print(f"Cannot connect to {self.server_addr}, Reason: {e}")
                     return #
             with self.lock_print:
                 print("Connected to server.")
 
             # Start a thread to receive data from server
-            t_receive = threading.Thread(target=self.receive_data, args=(server_socket,))
+            t_receive = threading.Thread(target=self.handle_server, args=(server_socket,))
             t_receive.start()
 
             # Wait till received my_id from server
@@ -81,7 +77,7 @@ class GameClient():
             while self.game_loop(screen=screen, sound_channel=sound_channel01, server=server_socket) and is_alive:
                 self.clock.tick(FPS)
             
-            self.close()
+            self.close() #######
 
     def close(self):
         """ End the whole program """
@@ -103,17 +99,12 @@ class GameClient():
             sound_channel.pause()
             pg.mixer.music.unpause()
 
-        # Get user input (direction and speed) and sent it to server
-        keys = pg.key.get_pressed()
-        mouse_pos = pg.mouse.get_pos()
+        # Get user input (direction and speed) and send to server
+        keys, mouse_pos = pg.key.get_pressed(), pg.mouse.get_pos()
         dx, dy = mouse_pos[0]-SCREEN_CENTER[0], mouse_pos[1]-SCREEN_CENTER[1]
         direction = math.degrees(math.atan2(-dy, dx))
         speed = SPEED_NORMAL if not keys[pg.K_SPACE] else SPEED_FAST
-
-        # Send input to server
         if not self.send_input(server, direction, speed):
-            with self.lock_print:
-                print("Connection interrupted.")
             return False
 
         # Render
@@ -122,7 +113,6 @@ class GameClient():
         text = font.render(f"{game_img.snakes[my_id]}", True, RED)
         screen.blit(text, (10, 10))
         pg.draw.line(screen, WHITE, SCREEN_CENTER, mouse_pos, width=1)
-        pg.draw.circle(screen, WHITE, SCREEN_CENTER, 2, 0)
         game_img.render(screen=screen, head_pos=game_img.snakes[my_id].head(), zf=game_img.get_zf(my_id))
         pg.display.flip()
 
@@ -147,44 +137,16 @@ class GameClient():
             self.close()
         else:
             pass
-    
-    def recv_all(self, server, l):
-        """ Receive length l of data """
-        data = b""
-        while len(data) < l:
-            packet = server.recv(l-len(data))
-            if not packet:
-                return None
-            data += packet
-        return data
 
-    def receive_data(self, s):
+    def handle_server(self, conn):
         """ Receive data from the server """
-        while True:
-            raw_header = self.recv_all(s, 8)
-            if not raw_header:
-                self.close() # Connection interrupted
-                return #
-            msg_type, msg_len = struct.unpack('!II', raw_header)
-            raw_data = b""
-            if not msg_type == MSG_TYPE_NOTICE:
-                raw_data = self.recv_all(s, msg_len)
-                if not raw_data:
-                    self.close() # Connection interruped
-                    return #
-            self.handle_server_data(raw_data, msg_type)
-
-    def send_input(self, s, direction, speed):
-        """ Send input message to server """
-        data_to_send = struct.pack("ff", direction, speed)
-        try:
-            # Send header
-            s.sendall(struct.pack('!II', MSG_TYPE_INPUT, len(data_to_send)))
-            # Send data
-            s.sendall(data_to_send)
-        except:
-            return False
-        return True
+        with conn:
+            while True:
+                msg = self.recv_msg(conn)
+                if msg is None:
+                    break
+                raw_data, msg_type = msg
+                self.handle_server_data(raw_data, msg_type)
     
 def window_input_server_addr():
     """ Get server address for user input on a GUI"""
@@ -221,23 +183,23 @@ def window_input_server_addr():
     
     pg.quit()
     if user_input == "":
-        return (DEFAULT_HOST, DEFAULT_PORT)
+        return (HOST, PORT)
     results = tuple(user_input.split(":"))
     if len(results) != 2 or (not results[1].isdigit() and results[1] != ""):
         return None
     host, port = results[0], results[1]
     if host == "":
-        host = DEFAULT_HOST
+        host = HOST
     if port == "":
-        port = DEFAULT_PORT
+        port = PORT
     else:
         port = int(port)
     return (results[0], results[1])
 
 if __name__ == "__main__":
-    s = window_input_server_addr()
-    if s is None:
-        print("Invalid address.")
-        sys.exit()
-    my_client = GameClient(s[0], s[1])
+    #s = window_input_server_addr()
+    #if s is None:
+     #   print("Invalid address.")
+      #  sys.exit()
+    my_client = GameClient()
     my_client.start()
