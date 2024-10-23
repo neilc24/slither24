@@ -22,9 +22,9 @@ class SnakeNetwork():
             return False
         return True
 
-    def recv_msg(self, conn):
+    def recv_msg(self, conn, timeout=RECV_TIMEOUT):
         """ Receive message (including header and data of certain length) """
-        conn.settimeout(RECV_TIMEOUT)
+        conn.settimeout(timeout)
         try:
             raw_header = conn.recv(8) # Receive header first
         except socket.timeout:
