@@ -14,7 +14,7 @@ import sys
 from snake_game import SnakeGame
 from config import *
 
-DEFAULT_HOST = "165.227.82.177"
+DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 12345
 
 class GameClient():

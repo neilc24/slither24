@@ -120,15 +120,16 @@ class GameServer():
             self.clock.tick(FPS)
 
     def broadcast_game(self):
+        """ Broadcast the game state to every player """
+        # To improve: use threadpool
         with self.lock_mygame:
-            data_to_send = pickle.dumps(self.mygame)
+            data = pickle.dumps(self.mygame)
+            # Combine header and data together
+            msg_to_send = struct.pack('!II', MSG_TYPE_SNAKEGAME, len(data))+data
         with self.lock_players:
             for player in list(self.players):
                 try:
-                    # Send header first including message type and length of the data
-                    player[0].sendall(struct.pack('!II', MSG_TYPE_SNAKEGAME, len(data_to_send)))
-                    # Send data
-                    player[0].sendall(data_to_send)
+                    player[0].sendall(msg_to_send)
                 except:
                     with self.lock_print:
                         print(f"Connection with {player[1]} interrupted during broadcasting.")
