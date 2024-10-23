@@ -25,22 +25,30 @@ cd slither24
 2.	Install dependencies:
 
 - You will need Python 3.x and pygame. Install the required Python modules:
-`pip install pygame`
+```
+pip install pygame
+```
 
 ## Running the Game
 
 1. To host a game, run the server:
-`python server.py`
+```
+python server.py
+```
 
 The server will start listening for client connections.
 
 2. Once the server is up, players can join by running the client:
-`python client.py`
+```
+python client.py
+```
 
 The client will connect to the server and start the game.
 
 3. To run the game locally (for debugging and demonstration):
-`python local_play.py`
+```
+python local_play.py
+```
 
 ## Game Controls
 
