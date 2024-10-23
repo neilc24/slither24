@@ -1,5 +1,5 @@
 """
-Client of the game.
+client.py
 Github: https://github.com/neilc24/slither24
 """
 
@@ -8,7 +8,6 @@ import math
 import socket
 import pickle
 import threading
-import sys
 
 from snake_game import SnakeGame
 from snake_network import *
@@ -23,14 +22,15 @@ class GameClient(SnakeNetwork):
         self.lock_print = threading.Lock()
         self.id_recv_event = threading.Event()
         self.game_img_recv_event = threading.Event()
+        self.stop_event = threading.Event()
         self.clock = pg.time.Clock()
 
     def start(self):
         """ Start game """
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as conn:
             # Connect to server
             try:
-                server_socket.connect(self.server_addr)
+                conn.connect(self.server_addr)
             except Exception as e:
                 with self.lock_print:
                     print(f"Cannot connect to {self.server_addr}, Reason: {e}")
@@ -39,60 +39,50 @@ class GameClient(SnakeNetwork):
                 print("Connected to server.")
 
             # Start a thread to receive data from server
-            t_receive = threading.Thread(target=self.handle_server, args=(server_socket,))
+            t_receive = threading.Thread(target=self.handle_server, args=(conn,))
             t_receive.start()
 
             # Wait till received my_id from server
             self.id_recv_event.wait()
-            with self.lock_print:
-                print(f"Received id={my_id}")
-
             # Wait untill receiving first game_img
             self.game_img_recv_event.wait()
-            with self.lock_print:
-                print("Starting game...")
 
-            # Mark self as alive
-            global is_alive
-            is_alive = True
-            
-            # Initialize pg
+            # Initialize pygame
             pg.init()
             # Initialize music player
             pg.mixer.init()
-            # Load music
+            pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
             pg.mixer.music.load('assets/music01.mp3')
             pg.mixer.music.play(-1)
-            pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
+            # Initialize sound effect channel
             speedup_sound = pg.mixer.Sound('assets/sound_effect01.mp3')
-            sound_channel01 = pg.mixer.Channel(0)
-            sound_channel01.play(speedup_sound, loops=-1)
-            sound_channel01.set_volume(MUSIC_VOLUME) # Set volume
-            sound_channel01.pause()
+            sound_channel = pg.mixer.Channel(0)
+            sound_channel.set_volume(MUSIC_VOLUME) # Set volume
+            sound_channel.play(speedup_sound, loops=-1)
+            sound_channel.pause()
             # Set up window display
             pg.display.set_icon(pg.image.load('assets/icon.png'))
             screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
             pg.display.set_caption(WINDOW_CAPTION)
             
-            while self.game_loop(screen=screen, sound_channel=sound_channel01, server=server_socket) and is_alive:
+            # Game loop
+            while not self.stop_event.is_set() and self.game_loop(screen, sound_channel, conn):
                 self.clock.tick(FPS)
             
-            self.close() #######
+            with self.lock_print:
+                print("GAME OVER")
+            # Clean up and quit
+            pg.mixer.music.stop()
+            pg.quit()
 
-    def close(self):
-        """ End the whole program """
-        pg.mixer.music.stop()
-        pg.quit()
-        sys.exit()
-
-    def game_loop(self, screen, sound_channel, server):
+    def game_loop(self, screen, sound_channel, conn):
         """ Main game loop inside 'while Ture' """
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return False
 
         # Switch music if speeding up
-        if game_img.snakes[my_id].speed > SPEED_NORMAL:
+        if self.game_img.snakes[self.my_id].speed > SPEED_NORMAL:
             pg.mixer.music.pause()
             sound_channel.unpause()
         else:
@@ -104,16 +94,18 @@ class GameClient(SnakeNetwork):
         dx, dy = mouse_pos[0]-SCREEN_CENTER[0], mouse_pos[1]-SCREEN_CENTER[1]
         direction = math.degrees(math.atan2(-dy, dx))
         speed = SPEED_NORMAL if not keys[pg.K_SPACE] else SPEED_FAST
-        if not self.send_input(server, direction, speed):
+        if not self.send_input(conn, direction, speed):
             return False
 
         # Render
         screen.fill(BLACK)
         font = pg.font.Font(None, 36)
-        text = font.render(f"{game_img.snakes[my_id]}", True, RED)
+        text = font.render(f"{self.game_img.snakes[self.my_id]}", True, RED)
         screen.blit(text, (10, 10))
         pg.draw.line(screen, WHITE, SCREEN_CENTER, mouse_pos, width=1)
-        game_img.render(screen=screen, head_pos=game_img.snakes[my_id].head(), zf=game_img.get_zf(my_id))
+        self.game_img.render(screen=screen, 
+                             head_pos=self.game_img.snakes[self.my_id].head(), 
+                             zf=self.game_img.get_zf(self.my_id))
         pg.display.flip()
 
         return True
@@ -122,31 +114,34 @@ class GameClient(SnakeNetwork):
         """ Handle raw data received from server """
         if msg_type == MSG_TYPE_SNAKEGAME:
             with self.lock_game_img:
-                global game_img
-                game_img = pickle.loads(raw_data)
+                self.game_img = pickle.loads(raw_data)
+            if not self.game_img_recv_event.is_set():
+                with self.lock_print:
+                    print(f"Received first game snapshot={self.game_img}")
             self.game_img_recv_event.set()
         elif msg_type == MSG_TYPE_SNAKEID:
-            global my_id
-            my_id = raw_data.decode()
+            self.my_id = raw_data.decode()
+            with self.lock_print:
+                print(f"Received id={self.my_id}")
             self.id_recv_event.set()
         elif msg_type == MSG_TYPE_NOTICE:
             with self.lock_print:
-                print("You died.") # DEBUG
-            global is_alive
-            is_alive = False
-            self.close()
+                print("Received message: You died.")
+            self.stop_event.set()
         else:
-            pass
+            with self.lock_print:
+                print("Cannot decode data from server.")
 
     def handle_server(self, conn):
         """ Receive data from the server """
         with conn:
-            while True:
+            while not self.stop_event.is_set():
                 msg = self.recv_msg(conn)
                 if msg is None:
                     break
                 raw_data, msg_type = msg
                 self.handle_server_data(raw_data, msg_type)
+        self.stop_event.set()
     
 def window_input_server_addr():
     """ Get server address for user input on a GUI"""
@@ -199,7 +194,7 @@ def window_input_server_addr():
 if __name__ == "__main__":
     #s = window_input_server_addr()
     #if s is None:
-     #   print("Invalid address.")
-      #  sys.exit()
+    #    print("Invalid address.")
+    #    sys.exit()
     my_client = GameClient()
     my_client.start()

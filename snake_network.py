@@ -1,4 +1,5 @@
 """
+snake_network.py
 Github: https://github.com/neilc24/slither24
 """
 
@@ -7,10 +8,6 @@ import pickle
 import struct
 
 from config import *
-
-HOST = ""
-PORT = 12345
-RECV_TIMEOUT = 2
 
 class SnakeNetwork():
     def send_msg(self, conn, raw_data, msg_type):
@@ -60,27 +57,27 @@ class SnakeNetwork():
             raw_data += packet
         return raw_data, msg_type
 
-    def send_game_snapshot(self, player, mygame):
+    def send_game_snapshot(self, conn, mygame):
         """ Send game state to a single player"""
         raw_data = pickle.dumps(mygame)
-        if not self.send_msg(player[0], raw_data, MSG_TYPE_SNAKEGAME):
+        if not self.send_msg(conn, raw_data, MSG_TYPE_SNAKEGAME):
             with self.lock_print:
                 print(f"Connection interrupted while sending game snapshot.")
             return False
         return True
 
-    def send_id(self, player, snake_id):
+    def send_id(self, conn, snake_id):
         """ Send player their ID """
         raw_data = snake_id.encode()
-        if not self.send_msg(player[0], raw_data, MSG_TYPE_SNAKEID):
+        if not self.send_msg(conn, raw_data, MSG_TYPE_SNAKEID):
             with self.lock_print:
                 print(f"Connection interrupted while sending id.")
             return False
         return True
 
-    def send_death_notice(self, player):
+    def send_death_notice(self, conn):
         """ Send a message to notice player that they died """
-        if not self.send_msg(player[0], b"", MSG_TYPE_NOTICE):
+        if not self.send_msg(conn, b"", MSG_TYPE_NOTICE):
             with self.lock_print:
                 print(f"Connection interrupted while sending id.")
             return False

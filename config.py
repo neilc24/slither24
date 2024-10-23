@@ -1,4 +1,5 @@
 """
+config.py
 Config stores all the configurations needed for the game.
 Github: https://github.com/neilc24/slither24
 """
@@ -39,6 +40,9 @@ BODY_INTERVAL = 12.5
 MAX_PLAYERS = 200
 
 # Network
+HOST = "127.0.0.1"
+PORT = 12345
+RECV_TIMEOUT = 2
 # Message types (int) from server to clients
 MSG_TYPE_SNAKEGAME = 11  # A pickled instance of SnakeGame()
 MSG_TYPE_SNAKEID = 12    # A string of snake_id

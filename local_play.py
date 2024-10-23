@@ -1,4 +1,5 @@
 """
+local_play.py
 Single player mode (offline) for debugging.
 Github: https://github.com/neilc24/slither24
 """
@@ -27,11 +28,10 @@ sound_channel01 = pg.mixer.Channel(0)
 sound_channel01.play(speedup_sound, loops=-1)
 sound_channel01.set_volume(MUSIC_VOLUME) # Set volume
 sound_channel01.pause()
-
 # Set up window display
 pg.display.set_icon(pg.image.load('assets/icon.png'))
-screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pg.display.set_caption(WINDOW_CAPTION)
+screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 clock = pg.time.Clock()
 
