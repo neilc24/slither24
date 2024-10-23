@@ -14,13 +14,11 @@ import sys
 from snake_game import SnakeGame
 from config import *
 
-# HOST = "165.227.82.177"
-HOST = "127.0.0.1"
-PORT = 12345
+DEFAULT_PORT = 12345
 
 class GameClient():
-    def __init__(self,):
-        self.server_addr = (HOST, PORT)
+    def __init__(self, host="127.0.0.1", port=DEFAULT_PORT):
+        self.server_addr = (host, port)
         self.game_img = SnakeGame() # A local image of the game that runs on the server
         self.my_id = ""
         self.is_alive = False
@@ -38,8 +36,7 @@ class GameClient():
                 server_socket.connect(self.server_addr)
             except:
                 with self.lock_print:
-                    print("Cannot connect.")
-                    self.close()
+                    print(f"Cannot connect to {self.server_addr}")
                     return #
             with self.lock_print:
                 print("Connected to server.")
@@ -62,7 +59,7 @@ class GameClient():
             global is_alive
             is_alive = True
             
-            # Initialize pygame
+            # Initialize pg
             pg.init()
             # Initialize music player
             pg.mixer.init()
@@ -187,7 +184,59 @@ class GameClient():
         except:
             return False
         return True
+    
+def window_input_server_addr():
+    """ Get server address for user input on a GUI"""
+    pg.init()
+    pg.display.set_icon(pg.image.load('assets/icon.png'))
+    pg.display.set_caption(WINDOW_CAPTION)
+    screen = pg.display.set_mode((400, 200))
+    font = pg.font.Font(None, 32)
+    user_input = ""
+    input_active = True
+    clock = pg.time.Clock()
+    while input_active:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+                return None
+            elif event.type == pg.KEYDOWN:
+                if event.key == pg.K_RETURN:  # Enter key pressed
+                    input_active = False  # Stop input
+                elif event.key == pg.K_BACKSPACE:  # Backspace key
+                    user_input = user_input[:-1]  # Remove last character
+                else:
+                    user_input += event.unicode  # Add new character
+        screen.fill(BLACK)
+        screen.blit(font.render("Ender server address (ip:port):", True, WHITE), (10, 10))
+
+        input_box = pg.Rect(100, 70, 200, 45)  # Position and size of input box
+        pg.draw.rect(screen, WHITE, input_box, 2)  # Draw the box border
+
+        text_surface = font.render(user_input, True, WHITE)
+        screen.blit(text_surface, (input_box.x + 10, input_box.y + 10))
+        pg.display.flip()
+        clock.tick(30)
+    
+    pg.quit()
+    if user_input == "":
+        return ("127.0.0.1", DEFAULT_PORT)
+    results = tuple(user_input.split(":"))
+    if len(results) != 2 or (not results[1].isdigit() and results[1] != ""):
+        return None
+    host, port = results[0], results[1]
+    if host == "":
+        host = "127.0.0.1"
+    if port == "":
+        port = DEFAULT_PORT
+    else:
+        port = int(port)
+    return (results[0], results[1])
 
 if __name__ == "__main__":
-    my_client = GameClient()
+    s = window_input_server_addr()
+    if s is None:
+        print("Invalid address.")
+        sys.exit()
+    my_client = GameClient(s[0], s[1])
     my_client.start()

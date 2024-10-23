@@ -14,8 +14,8 @@ WINDOW_CAPTION = "Slither Grand Galaxy 2024"
 MUSIC_VOLUME = 0.1
 
 # Gameplay
-MAP_WIDTH = 3000
-MAP_HEIGHT = 3000
+MAP_WIDTH = 4000
+MAP_HEIGHT = 4000
 MAP_CENTER = (MAP_WIDTH//2, MAP_HEIGHT//2)
 
 DIRECTION_INIT = 0 # In degrees
@@ -26,7 +26,8 @@ SPEED_NORMAL = 2.4
 SPEED_FAST = 5.6
 SPEEDUP_COST = 0.16 # Cost of length per frame when speeding up
 
-FOOD_MIN = 4000 # Least amount of food in total
+FOOD_PER_1000x1000 = 150
+FOOD_MIN = round(FOOD_PER_1000x1000*MAP_WIDTH*MAP_HEIGHT/(1000*1000)) # Least amount of food in total
 FOOD_RADIUS_AVE = 5.5 # Average normal food radius
 FOOD_VALUE_AVE = 1.75 # Average normal food value
 
