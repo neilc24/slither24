@@ -14,10 +14,11 @@ import sys
 from snake_game import SnakeGame
 from config import *
 
+DEFAULT_HOST = "165.227.82.177"
 DEFAULT_PORT = 12345
 
 class GameClient():
-    def __init__(self, host="127.0.0.1", port=DEFAULT_PORT):
+    def __init__(self, host, port):
         self.server_addr = (host, port)
         self.game_img = SnakeGame() # A local image of the game that runs on the server
         self.my_id = ""
@@ -220,13 +221,13 @@ def window_input_server_addr():
     
     pg.quit()
     if user_input == "":
-        return ("127.0.0.1", DEFAULT_PORT)
+        return (DEFAULT_HOST, DEFAULT_PORT)
     results = tuple(user_input.split(":"))
     if len(results) != 2 or (not results[1].isdigit() and results[1] != ""):
         return None
     host, port = results[0], results[1]
     if host == "":
-        host = "127.0.0.1"
+        host = DEFAULT_HOST
     if port == "":
         port = DEFAULT_PORT
     else:

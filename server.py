@@ -123,7 +123,7 @@ class GameServer():
         with self.lock_mygame:
             data_to_send = pickle.dumps(self.mygame)
         with self.lock_players:
-            for player in self.players:
+            for player in list(self.players):
                 try:
                     # Send header first including message type and length of the data
                     player[0].sendall(struct.pack('!II', MSG_TYPE_SNAKEGAME, len(data_to_send)))
