@@ -1,6 +1,17 @@
 """
 client.py
-Github: https://github.com/neilc24/slither24
+
+A client program for the Slither24 multiplayer game. This client connects to the server,
+receives game state updates, and allows the player to interact with the game using pygame.
+The client handles receiving data from the server, user input, and rendering the game screen.
+
+GitHub Repository: https://github.com/neilc24/slither24
+
+Classes:
+    - GameClient: Manages the client connection to the server, receives game state updates,
+      handles user input, and renders the game using pygame.
+
+Author: Neil (GitHub: neilc24)
 """
 
 import pygame as pg
@@ -29,11 +40,13 @@ class GameClient(SnakeNetwork):
         """ Start game """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as conn:
             # Connect to server
+            with self.lock_print:
+                print(f"Connecting to {self.server_addr}...")
             try:
                 conn.connect(self.server_addr)
             except Exception as e:
                 with self.lock_print:
-                    print(f"Cannot connect to {self.server_addr}, Reason: {e}")
+                    print(f"Cannot connect. Reason: {e}")
                     return #
             with self.lock_print:
                 print("Connected to server.")
@@ -142,59 +155,7 @@ class GameClient(SnakeNetwork):
                 raw_data, msg_type = msg
                 self.handle_server_data(raw_data, msg_type)
         self.stop_event.set()
-    
-def window_input_server_addr():
-    """ Get server address for user input on a GUI"""
-    pg.init()
-    pg.display.set_icon(pg.image.load('assets/icon.png'))
-    pg.display.set_caption(WINDOW_CAPTION)
-    screen = pg.display.set_mode((400, 200))
-    font = pg.font.Font(None, 32)
-    user_input = ""
-    input_active = True
-    clock = pg.time.Clock()
-    while input_active:
-        for event in pg.event.get():
-            if event.type == pg.QUIT:
-                pg.quit()
-                return None
-            elif event.type == pg.KEYDOWN:
-                if event.key == pg.K_RETURN:  # Enter key pressed
-                    input_active = False  # Stop input
-                elif event.key == pg.K_BACKSPACE:  # Backspace key
-                    user_input = user_input[:-1]  # Remove last character
-                else:
-                    user_input += event.unicode  # Add new character
-        screen.fill(BLACK)
-        screen.blit(font.render("Ender server address (ip:port):", True, WHITE), (10, 10))
-
-        input_box = pg.Rect(100, 70, 200, 45)  # Position and size of input box
-        pg.draw.rect(screen, WHITE, input_box, 2)  # Draw the box border
-
-        text_surface = font.render(user_input, True, WHITE)
-        screen.blit(text_surface, (input_box.x + 10, input_box.y + 10))
-        pg.display.flip()
-        clock.tick(30)
-    
-    pg.quit()
-    if user_input == "":
-        return (HOST, PORT)
-    results = tuple(user_input.split(":"))
-    if len(results) != 2 or (not results[1].isdigit() and results[1] != ""):
-        return None
-    host, port = results[0], results[1]
-    if host == "":
-        host = HOST
-    if port == "":
-        port = PORT
-    else:
-        port = int(port)
-    return (results[0], results[1])
 
 if __name__ == "__main__":
-    #s = window_input_server_addr()
-    #if s is None:
-    #    print("Invalid address.")
-    #    sys.exit()
     my_client = GameClient()
     my_client.start()

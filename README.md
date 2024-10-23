@@ -1,28 +1,59 @@
-## Intro
+# Slither24
 
 *!!!Developing!!! Please report bugs*
 
-Slither24 is an online multiplayer **Snake** game, built using **Pygame** and designed for hosting on a cloud server.
-Players can connect, compete, and enjoy the classic snake game with smooth 360-degree movement. The game server can be run continuously on a cloud server for a seamless gaming experience.
+## Intro
+
+**Slither24** is a multiplayer snake-like game built using **Python** and **pygame**. Players connect to a server, control their snake, and compete with other players in real-time. The game is designed to be lightweight and supports both server and client components, allowing players to host their own game servers.
+
+## How to Play
+
+1. Set up your server.
+2. Run the client to join the game.
+3. Control your snake to grow in size, avoid collisions, and outmaneuver opponents.
 
 ## Installation
 
-Install pygame
+1.	Clone the repository:
 
-`pip3 install pygame`
+```
+git clone https://github.com/neilc24/slither24.git
 
-Play offline
+cd slither24
+```
 
-`python3 local_play.py`
+2.	Install dependencies:
 
-Start server
+- You will need Python 3.x and pygame. Install the required Python modules:
+`pip install pygame`
 
-`python3 server.py`
+## Running the Game
 
-Start client
+1. To host a game, run the server:
+`python server.py`
 
-`python3 client.py`
+The server will start listening for client connections.
+
+2. Once the server is up, players can join by running the client:
+`python client.py`
+
+The client will connect to the server and start the game.
+
+3. To run the game locally (for debugging and demonstration):
+`python local_play.py`
+
+## Game Controls
+
+- Move snake: Use the mouse to control the direction of the snake.
+
+- Speed up: Hold the spacebar to move faster.
+
+## Game Configuration
+
+You can customize the game by editing the `config.py` file.
+
+*Notice: When deployed on a cloud server, change the `HOST` variable to your server's public ip.*
 
 ## Contact
 
-Github: @neilc24
+Author: Neil (Github:@neilc24)
