@@ -53,9 +53,9 @@ while running and (MY_SNAKE_ID in mygame.snakes):
             running = False
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_p:
-                mygame.snakes[MY_SNAKE_ID].length += 200 ##DEBUG
+                mygame.snakes[MY_SNAKE_ID].length += 100 ##DEBUG
             if event.key == pg.K_o:
-                mygame.snakes[MY_SNAKE_ID].length = max(LENGTH_MIN, mygame.snakes[MY_SNAKE_ID].length-200) ##DEBUG
+                mygame.snakes[MY_SNAKE_ID].length = max(LENGTH_MIN, mygame.snakes[MY_SNAKE_ID].length-100) ##DEBUG
             if event.key == pg.K_k: # DEBUG Kill player
                 zf = mygame.get_zf(MY_SNAKE_ID)
                 head_pos = mygame.snakes[MY_SNAKE_ID].head()

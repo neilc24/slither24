@@ -23,7 +23,7 @@ class Snake:
         self.limit_box = (self.head()[0], self.head()[0], self.head()[1], self.head()[1])
 
     def __str__ (self):
-        return f"<Head={self.head()}, L={self.length:.0f}, Direction={self.angle:.1f}, R={self.radius:.2f}>"
+        return f"<Snake Head={self.head()}, Direction={self.angle:.1f}, Length={self.length:.0f}>"
     
     def head(self):
         """ Return the position of the head """

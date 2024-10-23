@@ -14,8 +14,8 @@ from snake_network import *
 from config import *
 
 class GameServer(SnakeNetwork):
-    def __init__(self):
-        self.server_addr = (HOST, PORT)
+    def __init__(self, host="", port=PORT):
+        self.server_addr = (host, port)
         self.mygame = SnakeGame()
         self.players = {}
         # Deadlock prevention: lock_mygame > lock_players > lock_print
