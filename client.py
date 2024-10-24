@@ -6,15 +6,12 @@ receives game state updates, and allows the player to interact with the game usi
 The client handles receiving data from the server, user input, and rendering the game screen.
 
 GitHub Repository: https://github.com/neilc24/slither24
-
-Classes:
-    - GameClient: Manages the client connection to the server, receives game state updates,
-      handles user input, and renders the game using pygame.
-
 Author: Neil (GitHub: neilc24)
+
+pyinstaller --clean --onefile --name SlitherGrandGalaxy24 
+            --icon assets/icon.ico --add-data assets:assets client.py
 """
 
-# pyinstaller --clean --onefile --name SlitherGrandGalaxy24 --icon assets/icon.ico --add-data assets:assets client.py
 
 import pygame as pg
 import math
@@ -25,9 +22,6 @@ import threading
 from snake_game import SnakeGame
 from snake_network import SnakeNetwork
 from config import *
-
-import os
-import sys
 
 class GameClient(SnakeNetwork):
     def __init__(self, host=HOST, port=PORT):
@@ -43,56 +37,77 @@ class GameClient(SnakeNetwork):
 
     def start(self):
         """ Start game """
+        screen, sound_channel = my_client.init_window()
+        # Ask user for server address
+        self.input_addr_shell()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as conn:
             # Connect to server
             with self.lock_print:
                 print(f"Connecting to {self.server_addr}...")
+            conn.settimeout(RECV_TIMEOUT*2)
             try:
                 conn.connect(self.server_addr)
             except Exception as e:
                 with self.lock_print:
                     print(f"Cannot connect. Reason: {e}")
-                    return #
+                    return
             with self.lock_print:
                 print("Connected to server.")
-
             # Start a thread to receive data from server
             t_receive = threading.Thread(target=self.handle_server, args=(conn,))
             t_receive.daemon = True # Set as a daemon thread
             t_receive.start()
-
             # Wait till received my_id from server
             self.id_recv_event.wait()
             # Wait untill receiving first game_img
             self.game_img_recv_event.wait()
-
-            # Initialize pygame
-            pg.init()
-            # Initialize music player
-            pg.mixer.init()
-            pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
-            pg.mixer.music.load(self.get_abs_path('assets/music01.mp3'))
-            pg.mixer.music.play(-1)
-            # Initialize sound effect channel
-            speedup_sound = pg.mixer.Sound(self.get_abs_path('assets/sound_effect01.mp3'))
-            sound_channel = pg.mixer.Channel(0)
-            sound_channel.set_volume(MUSIC_VOLUME) # Set volume
-            sound_channel.play(speedup_sound, loops=-1)
-            sound_channel.pause()
-            # Set up window display
-            pg.display.set_icon(pg.image.load(self.get_abs_path('assets/icon.png')))
-            screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-            pg.display.set_caption(WINDOW_CAPTION)
-            
             # Game loop
             while not self.stop_event.is_set() and self.game_loop(screen, sound_channel, conn):
                 self.clock.tick(FPS)
-            
             with self.lock_print:
-                print("GAME OVER")
-            # Clean up and quit
-            pg.mixer.music.stop()
-            pg.quit()
+                print("-- GAME OVER --")
+        my_client.quit_window()
+    
+    def init_window(self):
+        """ Initialize music and window display """
+        # Initialize pygame
+        pg.init()
+        # Initialize music player
+        pg.mixer.init()
+        pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
+        pg.mixer.music.load(self.get_abs_path('assets/music01.mp3'))
+        pg.mixer.music.play(-1)
+        # Initialize sound effect channel
+        sound_channel = pg.mixer.Channel(0)
+        sound_channel.set_volume(MUSIC_VOLUME) # Set volume
+        speedup_sound = pg.mixer.Sound(self.get_abs_path('assets/sound_effect01.mp3'))
+        sound_channel.play(speedup_sound, loops=-1)
+        sound_channel.pause()
+        # Set up window display
+        pg.display.set_icon(pg.image.load(self.get_abs_path('assets/icon.png')))
+        pg.display.set_caption(WINDOW_CAPTION)
+        screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        screen.fill(BLACK)
+        return screen, sound_channel
+
+    def quit_window(self):
+        """ Quit pygame and music mixer """
+        pg.mixer.quit()
+        pg.quit()
+
+    def input_addr_shell(self):
+        """ Get server address from user input """
+        with self.lock_print:
+            user_input = input("Enter server address (Ip:Port):")
+        results = tuple(user_input.split(":"))
+        host, port = results[0], ""
+        if len(results) > 1:
+            port = results[1]
+        if host != "":
+            self.server_addr = (host, self.server_addr[1])
+        if port != "" and port.isdigit():
+            self.server_addr = (self.server_addr[0], int(port))
+        return self.server_addr
 
     def game_loop(self, screen, sound_channel, conn):
         """ Main game loop inside 'while Ture' """

@@ -1,10 +1,14 @@
 """
 local_play.py
-Single player mode (offline) for debugging.
-Github: https://github.com/neilc24/slither24
-"""
 
-# pyinstaller --clean --onefile --name Slither24Local --icon assets/icon.ico --add-data assets:assets local_play.py
+Single player mode (offline) for debugging.
+
+Github: https://github.com/neilc24/slither24
+Author: Neil (GitHub: neilc24)
+
+pyinstaller --clean --onefile --name Slither24Local
+            --icon assets/icon.ico --add-data assets:assets local_play.py
+"""
 
 import pygame as pg
 import math
@@ -86,7 +90,7 @@ while running and (MY_SNAKE_ID in mygame.snakes):
     font = pg.font.Font(None, 36)
     text = font.render(f"{mygame.snakes[MY_SNAKE_ID]}", True, RED)
     screen.blit(text, (10, 10))
-    pg.draw.circle(screen, WHITE, SCREEN_CENTER, 2, 0)
+    pg.draw.line(screen, WHITE, SCREEN_CENTER, mouse_pos, width=1)
     mygame.render(screen=screen, head_pos=mygame.snakes[MY_SNAKE_ID].head(), zf=mygame.get_zf(MY_SNAKE_ID))
     pg.display.flip()
 
@@ -99,4 +103,3 @@ while running and (MY_SNAKE_ID in mygame.snakes):
 print("--- GAME OVER ---")
 pg.mixer.music.stop()
 pg.quit()
-sys.exit()

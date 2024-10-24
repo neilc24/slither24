@@ -1,11 +1,15 @@
 """
 snake_network.py
+
 Github: https://github.com/neilc24/slither24
+Author: Neil (GitHub: neilc24)
 """
 
 import socket
 import pickle
 import struct
+import sys
+import os
 
 from config import *
 
@@ -24,12 +28,12 @@ class SnakeNetwork():
 
     def recv_msg(self, conn, *, timeout=RECV_TIMEOUT, lock_print):
         """ Receive message (including header and data of certain length) """
-        conn.settimeout(timeout)
         try:
+            conn.settimeout(timeout)
             raw_header = conn.recv(8) # Receive header first
         except socket.timeout:
             with lock_print:
-                print(f"Socket timed out waiting for header.")
+                print(f"Timeout while waiting for header.")
             return None
         except socket.error as e:
             with lock_print:
@@ -44,7 +48,7 @@ class SnakeNetwork():
                 packet = conn.recv(msg_len - len(raw_data))
             except socket.timeout:
                 with lock_print:
-                    print(f"Socket timed out waiting for data.")
+                    print(f"Timeout while waiting for data.")
                 return None
             except socket.error as e:
                 with lock_print:
@@ -91,3 +95,12 @@ class SnakeNetwork():
                 print(f"Connection interrupted while sending input data.")
             return False
         return True
+    
+    def get_abs_path(self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            # PyInstaller creates a temp folder and stores path in _MEIPASS
+            base_path = sys._MEIPASS
+        except AttributeError:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)

@@ -1,7 +1,10 @@
 """
 config.py
+
 Config stores all the configurations needed for the game.
+
 Github: https://github.com/neilc24/slither24
+Author: Neil (GitHub: neilc24)
 """
 
 # Network

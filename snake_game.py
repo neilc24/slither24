@@ -1,6 +1,10 @@
 """
+snake_game.py
+
 Including main class SnakeGame.
+
 Github: https://github.com/neilc24/slither24
+Author: Neil (GitHub: neilc24)
 """
 
 import pygame as pg
@@ -14,7 +18,7 @@ class SnakeGame:
     def __init__ (self):
         # self.snakes = {Snake()}
         self.snakes = {}
-        # self.food = {position:{color:GREEN, radius:5, value:1.0}}
+        # self.food = {pos:{"color":GREEN, "radius":5, "value":1.0}}
         self.food = {}
 
     def __str__ (self):

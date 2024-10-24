@@ -1,6 +1,10 @@
 """
 server.py
-Github: https://github.com/neilc24/slither24
+
+Github Repository: https://github.com/neilc24/slither24
+Author: Neil (GitHub: neilc24)
+
+pyinstaller --clean --onefile --name Slither24Server server.py
 """
 
 import pygame as pg
