@@ -87,6 +87,15 @@ class SnakeNetwork():
             return False
         return True
     
+    def send_passkey(self, conn, *, lock_print):
+        """ Send input message """
+        raw_data = PASSKEY.encode('utf-8')
+        if not self.send_msg(conn, raw_data, MSG_TYPE_PASSKEY, lock_print=lock_print):
+            with lock_print:
+                print(f"Connection interrupted while sending passkey.")
+            return False
+        return True
+    
     def send_input(self, conn, direction, speed, *, lock_print):
         """ Send input message """
         raw_data = struct.pack("ff", direction, speed)

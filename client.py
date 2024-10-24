@@ -49,6 +49,7 @@ class GameClient(SnakeNetwork):
                 with self.lock_print:
                     print(f"Cannot connect. Reason: {e}")
                     return
+            self.send_passkey(conn, lock_print=self.lock_print)
             with self.lock_print:
                 print("Connected to server.")
             # Start a thread to receive data from server
@@ -141,7 +142,6 @@ class GameClient(SnakeNetwork):
                              head_pos=self.game_img.snakes[self.my_id].head(), 
                              zf=self.game_img.get_zf(self.my_id))
         pg.display.flip()
-
         return True
 
     def handle_server_data(self, raw_data, msg_type):

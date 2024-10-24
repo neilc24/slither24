@@ -10,13 +10,14 @@ Author: Neil (GitHub: neilc24)
 # Network
 HOST = "127.0.0.1"
 PORT = 12345
+PASSKEY = "sQ^w356u&9h-Jd"
 RECV_TIMEOUT = 2
 # Message types (int) from server to clients
 MSG_TYPE_SNAKEGAME = 11  # A pickled instance of SnakeGame()
 MSG_TYPE_SNAKEID = 12    # A string of snake_id
 MSG_TYPE_NOTICE = 13     # Death notice
 # Messages types (int) from clients to server
-MSG_TYPE_REGISTER = 21   # User register request
+MSG_TYPE_PASSKEY = 21   # User register request
 MSG_TYPE_INPUT = 22      # User input
 MAX_PLAYERS = 100
 
@@ -51,6 +52,8 @@ FOOD_VALUE_AVE = 1.75 # Average normal food value
 
 FOOD_BODY_RADIUS_AVE = SNAKE_RADIUS_MIN+2 # Average food radius made from killed snakes
 FOOD_BODY_VALUE_AVE = FOOD_VALUE_AVE*3 # Average food value made from killed snakes
+
+ZOOM_INDEX = 1.3
 
 # Colors
 BLACK = (0, 0, 0)

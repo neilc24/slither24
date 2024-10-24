@@ -154,11 +154,11 @@ class SnakeGame:
             #fpos = random.choice(list(self.food.keys()))
             #del self.food[fpos]
     
-    def get_zf(self, snake_id, f=1.3):
+    def get_zf(self, snake_id):
         """ Calculate camera zoom factor (zf) based on snake radius """
         if not snake_id in self.snakes:
             return None 
-        return math.sqrt(self.snakes[snake_id].radius/SNAKE_RADIUS_MIN)/f
+        return math.sqrt(self.snakes[snake_id].radius/SNAKE_RADIUS_MIN)/ZOOM_INDEX
     
     def get_cam_center(self, head_pos, zf):
         """ Calculate the position of the center of the camera on the map """
@@ -228,6 +228,6 @@ class SnakeGame:
         x1, x2, y1, y2 = self.snakes[snake_id].limit_box
         # Screen box
         cx1, cy1 = self.invert_get_position((0, 0), cam_center, zf)
-        cx2, cy2 = self.invert_get_position((SCREEN_HEIGHT, SCREEN_WIDTH), cam_center, zf)
+        cx2, cy2 = self.invert_get_position((SCREEN_WIDTH, SCREEN_HEIGHT), cam_center, zf)
         # If two boxes overlap return True
-        return x2>=cx1 and y2 >= cy1 and x1 <= cx2 and y1 <= cy2
+        return x2 >= cx1 and y2 >= cy1 and x1 <= cx2 and y1 <= cy2

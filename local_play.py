@@ -97,7 +97,7 @@ while running and (MY_SNAKE_ID in mygame.snakes):
     mygame.update_player(MY_SNAKE_ID, direction, speed)
     mygame.update_player("DEBUG") # DEBUG
     mygame.update_game()
-
+    
     clock.tick(FPS)
 
 print("--- GAME OVER ---")
