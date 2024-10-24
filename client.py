@@ -36,7 +36,6 @@ class GameClient(SnakeNetwork):
 
     def start(self):
         """ Start game """
-        screen, sound_channel = my_client.init_window()
         # Ask user for server address
         self.input_addr_shell()
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as conn:
@@ -60,7 +59,7 @@ class GameClient(SnakeNetwork):
             self.id_recv_event.wait()
             # Wait untill receiving first game_img
             self.game_img_recv_event.wait()
-            pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.SHOWN)
+            screen, sound_channel = my_client.init_window()
             # Game loop
             while not self.stop_event.is_set() and self.game_loop(screen, sound_channel, conn):
                 self.clock.tick(FPS)
@@ -87,7 +86,7 @@ class GameClient(SnakeNetwork):
         # Set up window display
         pg.display.set_icon(pg.image.load(self.get_abs_path('assets/icon.png')))
         pg.display.set_caption(WINDOW_CAPTION)
-        screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.HIDDEN)
+        screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         return screen, sound_channel
 
     def quit_window(self):
@@ -150,10 +149,10 @@ class GameClient(SnakeNetwork):
         if msg_type == MSG_TYPE_SNAKEGAME:
             with self.lock_game_img:
                 self.game_img = pickle.loads(raw_data)
-                if not self.game_img_recv_event.is_set():
-                    with self.lock_print:
-                        print(f"Received first game snapshot={self.game_img}")
-                    self.game_img_recv_event.set()
+            if not self.game_img_recv_event.is_set():
+                with self.lock_print:
+                    print(f"Received first game snapshot={self.game_img}")
+                self.game_img_recv_event.set()
         elif msg_type == MSG_TYPE_SNAKEID:
             self.my_id = raw_data.decode()
             with self.lock_print:

@@ -61,9 +61,9 @@ class SnakeNetwork():
             raw_data += packet
         return raw_data, msg_type
 
-    def send_game_snapshot(self, conn, mygame, *, lock_print):
+    def send_game_snapshot(self, conn, game_snapshot, *, lock_print):
         """ Send game state to a single player"""
-        raw_data = pickle.dumps(mygame)
+        raw_data = pickle.dumps(game_snapshot)
         if not self.send_msg(conn, raw_data, MSG_TYPE_SNAKEGAME, lock_print=lock_print):
             with lock_print:
                 print(f"Connection interrupted while sending game snapshot.")

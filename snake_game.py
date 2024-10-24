@@ -80,7 +80,7 @@ class SnakeGame:
         Handle collision between snake head and other objects.
         Return True when snake killed, else return False.
         """
-        def is_in_box(box, pos, r):
+        def is_in_box(box, pos, r=0):
             """ Determin if a point is closer than r to a limit_box """
             return (pos[0]>=box[0]-r and pos[0]<=box[1]+r and pos[1]>=box[2]-r and pos[1]<=box[3]+r)
         
@@ -159,29 +159,38 @@ class SnakeGame:
         if not snake_id in self.snakes:
             return None 
         return math.sqrt(self.snakes[snake_id].radius/SNAKE_RADIUS_MIN)/f
+    
+    def get_cam_center(self, head_pos, zf):
+        """ Calculate the position of the center of the camera on the map """
+        x = max(SCREEN_WIDTH*zf/2, min(MAP_WIDTH-(SCREEN_WIDTH*zf/2), head_pos[0]))
+        y = max(SCREEN_HEIGHT*zf/2, min(MAP_HEIGHT-(SCREEN_HEIGHT*zf/2), head_pos[1]))
+        return (x, y)
+    
+    def get_position(self, pos, cam_center, zf):
+        """ Get screen coordinates based on map coordinates """
+        return (round(SCREEN_WIDTH/2-(cam_center[0]-pos[0])/zf), 
+                round(SCREEN_HEIGHT/2-(cam_center[1]-pos[1])/zf))
+    
+    def invert_get_position(self, pos, cam_center, zf):
+        """ Get map coordinates based on screen coordinates """
+        return (round(cam_center[0]+(pos[0]-SCREEN_WIDTH/2)*zf), 
+                round(cam_center[1]+(pos[1]-SCREEN_HEIGHT/2)*zf))
 
     def render(self, screen, head_pos, zf):
         """
         Render the map, the head of the given snake placed at the center.
         Camera zooms out when the snake gets bigger.
         """
-        # Calculate the position of the center of the camera on the map
-        ccx = max(SCREEN_WIDTH*zf/2, min(MAP_WIDTH-(SCREEN_WIDTH*zf/2), head_pos[0]))
-        ccy = max(SCREEN_HEIGHT*zf/2, min(MAP_HEIGHT-(SCREEN_HEIGHT*zf/2), head_pos[1]))
-
-        # Get screen coordinates based on map coordinates
-        get_position = lambda pos: (round(SCREEN_WIDTH/2-(ccx-pos[0])/zf), 
-                                  round(SCREEN_HEIGHT/2-(ccy-pos[1])/zf))
-        
         # Get screen distances baded on map distances
         get_distance = lambda d: (d/zf)
 
         # Decide if a dot is in the screen
         is_in_screen = lambda pos: (pos[0] >= 0 and pos[1] >= 0 and pos[0] <= SCREEN_WIDTH and pos[1] <= SCREEN_HEIGHT)
 
+        ccx, ccy = self.get_cam_center(head_pos, zf)
         # Render food
         for fpos in self.food:
-            pos = get_position(fpos)
+            pos = self.get_position(fpos, (ccx, ccy), zf)
             if is_in_screen(pos):
                 pg.draw.circle(screen, self.food[fpos]["color"], pos, self.food[fpos]["radius"], 0)
         
@@ -191,7 +200,7 @@ class SnakeGame:
             for i in range(len(s.positions)-1, -1, -1):
                 if self.distance2p(s.positions[i], pos_v) >= BODY_INTERVAL*(s.radius/SNAKE_RADIUS_MIN):
                     pos_v = s.positions[i]
-                    ps = get_position(s.positions[i])
+                    ps = self.get_position(s.positions[i], (ccx, ccy), zf)
                     ps = self.vibrate_pos(ps, factor=8*(s.speed-SPEED_NORMAL))
                     if is_in_screen(ps):
                         pg.draw.circle(screen, s.color, ps, get_distance(s.radius), 0)
@@ -200,7 +209,7 @@ class SnakeGame:
         font = pg.font.Font(None, 15)
         for s_id in self.snakes:
             text = font.render(f"{s_id}", True, WHITE)
-            screen.blit(text, get_position(self.snakes[s_id].positions[-1]))
+            screen.blit(text, self.get_position(self.snakes[s_id].positions[-1], (ccx, ccy), zf))
 
         # Render the edges of the map
         Line_width = 10
@@ -212,3 +221,13 @@ class SnakeGame:
             pg.draw.line(screen, RED, (SCREEN_WIDTH-1, 0), (SCREEN_WIDTH-1, SCREEN_HEIGHT-1), width=Line_width)
         if math.ceil(ccy+SCREEN_HEIGHT*zf/2) == MAP_HEIGHT:
             pg.draw.line(screen, RED, (0, SCREEN_HEIGHT-1), (SCREEN_WIDTH-1, SCREEN_HEIGHT-1), width=Line_width)
+
+    def snake_is_on_screen(self, snake_id, cam_center, zf):
+        """ Decide if I can see a snake on my screen """
+        # "Snake" box
+        x1, x2, y1, y2 = self.snakes[snake_id].limit_box
+        # Screen box
+        cx1, cy1 = self.invert_get_position((0, 0), cam_center, zf)
+        cx2, cy2 = self.invert_get_position((SCREEN_HEIGHT, SCREEN_WIDTH), cam_center, zf)
+        # If two boxes overlap return True
+        return x2>=cx1 and y2 >= cy1 and x1 <= cx2 and y1 <= cy2
