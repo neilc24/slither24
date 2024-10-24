@@ -64,9 +64,7 @@ You can customize the game by editing the `config.py` file.
 
 ## Future Development
 
-1. game_img can get big when players increase. It might slow the game down. We can try only sending player specific information when broadcasting.
-
-2. Get a passkey from client before registering them.
+1. do not broadcast every frame. run some game logic locally 
 
 ## Contact
 
