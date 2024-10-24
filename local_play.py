@@ -4,11 +4,14 @@ Single player mode (offline) for debugging.
 Github: https://github.com/neilc24/slither24
 """
 
+# pyinstaller --clean --onefile --name Slither24Local --icon assets/icon.ico --add-data assets:assets local_play.py
+
 import pygame as pg
 import math
 import sys
 
 from snake_game import SnakeGame
+from snake_network import SnakeNetwork
 from config import *
 
 # The only snake controlled by huamn existing in the offline game
@@ -20,16 +23,16 @@ pg.init()
 pg.mixer.init()
 
 # Load music
-pg.mixer.music.load('assets/music01.mp3')
+pg.mixer.music.load(SnakeNetwork().get_abs_path('assets/music01.mp3'))
 pg.mixer.music.play(-1)
 pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
-speedup_sound = pg.mixer.Sound('assets/sound_effect01.mp3')
+speedup_sound = pg.mixer.Sound(SnakeNetwork().get_abs_path('assets/sound_effect01.mp3'))
 sound_channel01 = pg.mixer.Channel(0)
 sound_channel01.play(speedup_sound, loops=-1)
 sound_channel01.set_volume(MUSIC_VOLUME) # Set volume
 sound_channel01.pause()
 # Set up window display
-pg.display.set_icon(pg.image.load('assets/icon.png'))
+pg.display.set_icon(pg.image.load(SnakeNetwork().get_abs_path('assets/icon.png')))
 pg.display.set_caption(WINDOW_CAPTION)
 screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 

@@ -14,6 +14,8 @@ Classes:
 Author: Neil (GitHub: neilc24)
 """
 
+# pyinstaller --clean --onefile --name SlitherGrandGalaxy24 --icon assets/icon.ico --add-data assets:assets client.py
+
 import pygame as pg
 import math
 import socket
@@ -23,6 +25,9 @@ import threading
 from snake_game import SnakeGame
 from snake_network import SnakeNetwork
 from config import *
+
+import os
+import sys
 
 class GameClient(SnakeNetwork):
     def __init__(self, host=HOST, port=PORT):
@@ -66,16 +71,16 @@ class GameClient(SnakeNetwork):
             # Initialize music player
             pg.mixer.init()
             pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
-            pg.mixer.music.load('assets/music01.mp3')
+            pg.mixer.music.load(self.get_abs_path('assets/music01.mp3'))
             pg.mixer.music.play(-1)
             # Initialize sound effect channel
-            speedup_sound = pg.mixer.Sound('assets/sound_effect01.mp3')
+            speedup_sound = pg.mixer.Sound(self.get_abs_path('assets/sound_effect01.mp3'))
             sound_channel = pg.mixer.Channel(0)
             sound_channel.set_volume(MUSIC_VOLUME) # Set volume
             sound_channel.play(speedup_sound, loops=-1)
             sound_channel.pause()
             # Set up window display
-            pg.display.set_icon(pg.image.load('assets/icon.png'))
+            pg.display.set_icon(pg.image.load(self.get_abs_path('assets/icon.png')))
             screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
             pg.display.set_caption(WINDOW_CAPTION)
             

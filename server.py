@@ -14,7 +14,7 @@ from snake_network import SnakeNetwork
 from config import *
 
 class GameServer(SnakeNetwork):
-    def __init__(self, host=HOST, port=PORT):
+    def __init__(self, host="", port=PORT):
         self.server_addr = (host, port)
         self.mygame = SnakeGame()
         self.players = {}
