@@ -62,6 +62,12 @@ You can customize the game by editing the `config.py` file.
 
 *Notice: When deployed on a cloud server, change the `HOST` variable to your server's public ip.*
 
+## Future Development
+
+1. game_img can get big when players increase. It might slow the game down. We can try only sending player specific information when broadcasting.
+
+2. Get a passkey from client before registering them.
+
 ## Contact
 
 Author: Neil (Github:@neilc24)

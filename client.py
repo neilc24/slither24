@@ -12,7 +12,6 @@ pyinstaller --clean --onefile --name SlitherGrandGalaxy24
             --icon assets/icon.ico --add-data assets:assets client.py
 """
 
-
 import pygame as pg
 import math
 import socket
@@ -61,6 +60,7 @@ class GameClient(SnakeNetwork):
             self.id_recv_event.wait()
             # Wait untill receiving first game_img
             self.game_img_recv_event.wait()
+            pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.SHOWN)
             # Game loop
             while not self.stop_event.is_set() and self.game_loop(screen, sound_channel, conn):
                 self.clock.tick(FPS)
@@ -77,6 +77,7 @@ class GameClient(SnakeNetwork):
         pg.mixer.music.set_volume(MUSIC_VOLUME) # Set volume
         pg.mixer.music.load(self.get_abs_path('assets/music01.mp3'))
         pg.mixer.music.play(-1)
+        pg.mixer.music.pause()
         # Initialize sound effect channel
         sound_channel = pg.mixer.Channel(0)
         sound_channel.set_volume(MUSIC_VOLUME) # Set volume
@@ -86,8 +87,7 @@ class GameClient(SnakeNetwork):
         # Set up window display
         pg.display.set_icon(pg.image.load(self.get_abs_path('assets/icon.png')))
         pg.display.set_caption(WINDOW_CAPTION)
-        screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-        screen.fill(BLACK)
+        screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pg.HIDDEN)
         return screen, sound_channel
 
     def quit_window(self):
