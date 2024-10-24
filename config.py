@@ -13,7 +13,8 @@ MSG_TYPE_SNAKEGAME = 11  # A pickled instance of SnakeGame()
 MSG_TYPE_SNAKEID = 12    # A string of snake_id
 MSG_TYPE_NOTICE = 13     # Death notice
 # Messages types (int) from clients to server
-MSG_TYPE_INPUT = 21      # User input
+MSG_TYPE_REGISTER = 21   # User register request
+MSG_TYPE_INPUT = 22      # User input
 MAX_PLAYERS = 100
 
 # Window

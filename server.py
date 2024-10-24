@@ -10,11 +10,11 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from snake_game import SnakeGame
-from snake_network import *
+from snake_network import SnakeNetwork
 from config import *
 
 class GameServer(SnakeNetwork):
-    def __init__(self, host="", port=PORT):
+    def __init__(self, host=HOST, port=PORT):
         self.server_addr = (host, port)
         self.mygame = SnakeGame()
         self.players = {}
@@ -40,6 +40,7 @@ class GameServer(SnakeNetwork):
 
             # Start a new thread to run game logic and broadcast
             t_game = threading.Thread(target=self.run_game)
+            t_game.daemon = True # Set as a daemon thread
             t_game.start()
 
             # Loop: accepting new clients
@@ -65,15 +66,15 @@ class GameServer(SnakeNetwork):
         with self.lock_print:
             print(f"New player added. ID={new_id}")
         # Send ID back to player
-        if not self.send_id(player[0], new_id):
+        if not self.send_id(player[0], new_id, lock_print=self.lock_print):
             self.remove_player(player)
             return None
         return new_id
 
-    def remove_player(self, player, holding_lock_mygame=False, holding_lock_players=False):
+    def remove_player(self, player, holding_lock_mygame=False, holding_lock_players=False, *, reason=None):
         """ Remove a player from the game """
         dead_id = None
-        self.send_death_notice(player[0])
+        self.send_death_notice(player[0], lock_print=self.lock_print)
         # Close socket connection
         player[0].close()
          # Remove player from self.players
@@ -94,7 +95,10 @@ class GameServer(SnakeNetwork):
         # Print
         if not dead_id is None:
             with self.lock_print:
-                print(f"Player {dead_id} removed.")
+                if reason is None:
+                    print(f"Player {dead_id} removed.")
+                else:
+                    print(f"Player {dead_id} removed. Reason: {reason}")
 
     def run_game(self):
         """ Run the game logic and broadcast the game state """
@@ -106,7 +110,7 @@ class GameServer(SnakeNetwork):
                     # If a player died remove them from {players}
                     for player in list(self.players):
                         if self.players[player] in death_records:
-                            self.remove_player(player, holding_lock_mygame=False, holding_lock_players=True)
+                            self.remove_player(player, False, True, reason="Died.")
             # Broadcast current game state to every player
             self.broadcast_game()
             self.clock.tick(FPS)
@@ -116,10 +120,13 @@ class GameServer(SnakeNetwork):
         # Using threadpool
         with ThreadPoolExecutor(max_workers=MAX_PLAYERS//2+1) as executor:
             with self.lock_mygame, self.lock_players:
-                futures = [executor.submit(self.send_game_snapshot, player[0], self.mygame) for player in self.players]
+                futures = [executor.submit(self.send_game_snapshot, 
+                                           player[0], 
+                                           self.mygame, 
+                                           lock_print=self.lock_print) for player in self.players]
                 for i in range(0, len(self.players)):
                     if not futures[i]:
-                        self.remove_player(self.players[i], True, True)
+                        self.remove_player(self.players[i], True, True, reason="Disconnected while broadcasting.")
 
     def handle_client_data(self, snake_id, raw_data, msg_type):
         """ Handle raw data received from a client """
@@ -130,8 +137,8 @@ class GameServer(SnakeNetwork):
                 if snake_id in self.mygame.snakes:
                     self.mygame.update_player(snake_id, direction, speed)
         else:
-            # Unknown message type
-            pass
+            with self.lock_print:
+                print("Unknown type of message from client.")
 
     def handle_client(self, player):
         """ Register client and receive messages"""
@@ -140,13 +147,13 @@ class GameServer(SnakeNetwork):
             client_id = self.register_player(player)
             # Message receiving loop
             while True:
-                msg = self.recv_msg(conn)
+                msg = self.recv_msg(conn, lock_print=self.lock_print)
                 if msg is None:
                     break
                 raw_data, msg_type = msg
                 self.handle_client_data(client_id, raw_data, msg_type)
             # Remove player in the end
-            self.remove_player(player, holding_lock_mygame=False, holding_lock_players=False)
+            self.remove_player(player, False, False, reason="Disconnected while receiving msg.")
 
     def generate_id(self, ip="unknown"):
         """ Generate an ID for a new player """
@@ -155,7 +162,7 @@ class GameServer(SnakeNetwork):
                 if not f"{ip}_{i}" in self.mygame.snakes:
                     return f"{ip}_{i}"
         return None
-    
+
 if __name__ == "__main__":
     my_server = GameServer()
     my_server.start()

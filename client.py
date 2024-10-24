@@ -21,7 +21,7 @@ import pickle
 import threading
 
 from snake_game import SnakeGame
-from snake_network import *
+from snake_network import SnakeNetwork
 from config import *
 
 class GameClient(SnakeNetwork):
@@ -53,6 +53,7 @@ class GameClient(SnakeNetwork):
 
             # Start a thread to receive data from server
             t_receive = threading.Thread(target=self.handle_server, args=(conn,))
+            t_receive.daemon = True # Set as a daemon thread
             t_receive.start()
 
             # Wait till received my_id from server
@@ -107,7 +108,8 @@ class GameClient(SnakeNetwork):
         dx, dy = mouse_pos[0]-SCREEN_CENTER[0], mouse_pos[1]-SCREEN_CENTER[1]
         direction = math.degrees(math.atan2(-dy, dx))
         speed = SPEED_NORMAL if not keys[pg.K_SPACE] else SPEED_FAST
-        if not self.send_input(conn, direction, speed):
+        # Send input to server
+        if not self.send_input(conn, direction, speed, lock_print=self.lock_print):
             return False
 
         # Render
@@ -128,10 +130,10 @@ class GameClient(SnakeNetwork):
         if msg_type == MSG_TYPE_SNAKEGAME:
             with self.lock_game_img:
                 self.game_img = pickle.loads(raw_data)
-            if not self.game_img_recv_event.is_set():
-                with self.lock_print:
-                    print(f"Received first game snapshot={self.game_img}")
-            self.game_img_recv_event.set()
+                if not self.game_img_recv_event.is_set():
+                    with self.lock_print:
+                        print(f"Received first game snapshot={self.game_img}")
+                    self.game_img_recv_event.set()
         elif msg_type == MSG_TYPE_SNAKEID:
             self.my_id = raw_data.decode()
             with self.lock_print:
@@ -149,7 +151,7 @@ class GameClient(SnakeNetwork):
         """ Receive data from the server """
         with conn:
             while not self.stop_event.is_set():
-                msg = self.recv_msg(conn)
+                msg = self.recv_msg(conn, lock_print=self.lock_print)
                 if msg is None:
                     break
                 raw_data, msg_type = msg
