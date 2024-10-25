@@ -64,8 +64,6 @@ You can customize the game by editing the `config.py` file.
 
 ## Future Development
 
-1. do not broadcast every frame. run some game logic locally 
-
 ## Contact
 
 Author: Neil (Github:@neilc24)

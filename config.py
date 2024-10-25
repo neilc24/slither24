@@ -21,7 +21,7 @@ MSG_TYPE_PASSKEY = 21   # User register request
 MSG_TYPE_INPUT = 22      # User input
 MAX_PLAYERS = 100
 
-BROADCAST_FREQUENCY = 3
+BROADCAST_FREQUENCY = 2
 
 # Window
 FPS = 60
