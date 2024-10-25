@@ -176,7 +176,7 @@ class SnakeGame:
         return (round(cam_center[0]+(pos[0]-SCREEN_WIDTH/2)*zf), 
                 round(cam_center[1]+(pos[1]-SCREEN_HEIGHT/2)*zf))
 
-    def render(self, screen, head_pos, zf):
+    def render(self, screen, head_pos, zf, *, p_names=True, p_box=False):
         """
         Render the map, the head of the given snake placed at the center.
         Camera zooms out when the snake gets bigger.
@@ -193,10 +193,22 @@ class SnakeGame:
             pos = self.get_position(fpos, (ccx, ccy), zf)
             if is_in_screen(pos):
                 pg.draw.circle(screen, self.food[fpos]["color"], pos, self.food[fpos]["radius"], 0)
-        
+
         # Render snakes
         for s in self.snakes.values():
             pos_v = (-1e5, -1e5) # Last visible position
+            # Render limit_box
+            if p_box:
+                x1, x2, y1, y2 = s.limit_box
+                cam_center = (ccx, ccy)
+                pg.draw.line(screen, GREEN, self.get_position((x1, y1), cam_center, zf), 
+                            self.get_position((x1, y2), cam_center, zf), width=1)
+                pg.draw.line(screen, GREEN, self.get_position((x2, y1), cam_center, zf), 
+                            self.get_position((x2, y2), cam_center, zf), width=1)
+                pg.draw.line(screen, GREEN, self.get_position((x1, y1), cam_center, zf), 
+                            self.get_position((x2, y1), cam_center, zf), width=1)
+                pg.draw.line(screen, GREEN, self.get_position((x1, y2), cam_center, zf), 
+                            self.get_position((x2, y2), cam_center, zf), width=1)
             for i in range(len(s.positions)-1, -1, -1):
                 if self.distance2p(s.positions[i], pos_v) >= BODY_INTERVAL*(s.radius/SNAKE_RADIUS_MIN):
                     pos_v = s.positions[i]
@@ -206,10 +218,11 @@ class SnakeGame:
                         pg.draw.circle(screen, s.color, ps, get_distance(s.radius), 0)
         
         # Print names of the snakes
-        font = pg.font.Font(None, 15)
-        for s_id in self.snakes:
-            text = font.render(f"{s_id}", True, WHITE)
-            screen.blit(text, self.get_position(self.snakes[s_id].positions[-1], (ccx, ccy), zf))
+        if p_names:
+            font = pg.font.Font(None, 15)
+            for s_id in self.snakes:
+                text = font.render(f"{s_id}", True, WHITE)
+                screen.blit(text, self.get_position(self.snakes[s_id].positions[-1], (ccx, ccy), zf))
 
         # Render the edges of the map
         Line_width = 10

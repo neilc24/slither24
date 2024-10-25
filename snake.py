@@ -12,14 +12,13 @@ class Snake:
                   direction=DIRECTION_INIT, speed=SPEED_NORMAL, 
                   length=LENGTH_MIN, radius=SNAKE_RADIUS_MIN):
         self.positions = [head_pos]
-        self.direction = direction # Direction from user
+        self.direction = direction  # Direction from user
         self.angle = self.direction # Actual direction
         self.speed = speed
         self.length = length
         self.color = color
         self.radius = radius
         # The whole body must be in the rectangle(left, right, up, down)
-        # (For the convenience of collision detection)
         self.limit_box = (self.head()[0], self.head()[0], self.head()[1], self.head()[1])
 
     def __str__ (self):

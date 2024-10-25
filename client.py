@@ -64,8 +64,8 @@ class GameClient(SnakeNetwork):
             # Game loop
             while not self.stop_event.is_set() and self.game_loop(screen, sound_channel, conn):
                 self.clock.tick(FPS)
-            with self.lock_print:
-                print("-- GAME OVER --")
+        with self.lock_print:
+            print("-- GAME OVER --")
         my_client.quit_window()
     
     def init_window(self):
@@ -131,6 +131,11 @@ class GameClient(SnakeNetwork):
         # Send input to server
         if not self.send_input(conn, direction, speed, lock_print=self.lock_print):
             return False
+        
+        # Run game logic locally
+        with self.lock_game_img:
+            self.game_img.update_player(self.my_id, direction, speed)
+            self.game_img.snakes[self.my_id].move()
 
         # Render
         screen.fill(BLACK)
@@ -142,6 +147,7 @@ class GameClient(SnakeNetwork):
                              head_pos=self.game_img.snakes[self.my_id].head(), 
                              zf=self.game_img.get_zf(self.my_id))
         pg.display.flip()
+
         return True
 
     def handle_server_data(self, raw_data, msg_type):

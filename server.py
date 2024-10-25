@@ -51,13 +51,13 @@ class GameServer(SnakeNetwork):
             # Loop: accepting new clients
             while True:
                 # Print a snapshot of the current game
-                with self.lock_mygame, self.lock_print:
-                    print(self.mygame)
                 new_client = server.accept()
                 t_client = threading.Thread(target=self.handle_client, args=(new_client,))
                 t_client.start()
                 with self.lock_print:
                     print(f"Connected to {new_client[1]}. Connections={threading.active_count()-2}")
+                with self.lock_mygame, self.lock_print:
+                    print(self.mygame)
 
     def register_player(self, player):
         """ Register a new player in the game and return their ID """
@@ -107,6 +107,7 @@ class GameServer(SnakeNetwork):
 
     def run_game(self):
         """ Run the game logic and broadcast the game state """
+        i = 0
         while True:
             with self.lock_mygame:
                 death_records = self.mygame.update_game()
@@ -117,7 +118,11 @@ class GameServer(SnakeNetwork):
                         if self.players[player] in death_records:
                             self.remove_player(player, False, True, reason="Died.")
             # Broadcast current game state to every player
-            self.broadcast_game()
+            if i == BROADCAST_FREQUENCY:
+                self.broadcast_game()
+                i = 0
+            else:
+                i += 1
             self.clock.tick(FPS)
 
     def broadcast_game(self):

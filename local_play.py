@@ -91,13 +91,15 @@ while running and (MY_SNAKE_ID in mygame.snakes):
     text = font.render(f"{mygame.snakes[MY_SNAKE_ID]}", True, RED)
     screen.blit(text, (10, 10))
     pg.draw.line(screen, WHITE, SCREEN_CENTER, mouse_pos, width=1)
-    mygame.render(screen=screen, head_pos=mygame.snakes[MY_SNAKE_ID].head(), zf=mygame.get_zf(MY_SNAKE_ID))
+
+    mygame.render(screen, mygame.snakes[MY_SNAKE_ID].head(), 
+                  mygame.get_zf(MY_SNAKE_ID), p_names=False, p_box=True)
     pg.display.flip()
 
     mygame.update_player(MY_SNAKE_ID, direction, speed)
     mygame.update_player("DEBUG") # DEBUG
     mygame.update_game()
-    
+
     clock.tick(FPS)
 
 print("--- GAME OVER ---")
